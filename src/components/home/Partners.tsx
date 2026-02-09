@@ -12,7 +12,7 @@ const Partners = () => {
           Our Partner Insurers
         </h2>
         <p className="text-muted-foreground text-center mb-10 max-w-2xl mx-auto">
-          We work with India's leading insurance companies to bring you the best policies.
+          We work with Kenya's leading insurance companies to bring you the best policies.
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {partners.map((name) => (

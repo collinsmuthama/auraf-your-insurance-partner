@@ -38,13 +38,13 @@ const Footer = () => {
             <h4 className="font-semibold text-lg mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>Contact Us</h4>
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2 text-sm opacity-80">
-                <Phone className="h-4 w-4" /> +91 98765 43210
+                <Phone className="h-4 w-4" /> +254 707 653 218
               </div>
               <div className="flex items-center gap-2 text-sm opacity-80">
-                <Mail className="h-4 w-4" /> info@aurafinsurance.com
+                <Mail className="h-4 w-4" /> info@aurafinsurance.com 
               </div>
               <div className="flex items-start gap-2 text-sm opacity-80">
-                <MapPin className="h-4 w-4 mt-0.5" /> Mumbai, Maharashtra, India
+                <MapPin className="h-4 w-4 mt-0.5" /> Kenyatta Ave, Nairobi, Kenya
               </div>
             </div>
           </div>

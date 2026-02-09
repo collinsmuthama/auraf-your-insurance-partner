@@ -10,7 +10,7 @@ const AgentCTA = () => {
           Sell Insurance & Get Instant Payment
         </h2>
         <p className="text-lg opacity-90 max-w-2xl mx-auto mb-8">
-          Join India's fastest growing insurance distribution network. Earn unlimited commissions with zero investment.
+          Join Kenya's fastest growing insurance distribution network. Earn unlimited commissions with zero investment.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto mb-10">
           {[

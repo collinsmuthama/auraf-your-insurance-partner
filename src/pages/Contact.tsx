@@ -46,9 +46,9 @@ const Contact = () => {
                 <h2 className="text-2xl font-bold mb-6" style={{ fontFamily: 'Montserrat, sans-serif' }}>Get in Touch</h2>
                 <div className="space-y-6 mb-8">
                   {[
-                    { icon: Phone, label: "Phone", value: "+91 98765 43210" },
+                    { icon: Phone, label: "Phone", value: "+254 707 653 218" },
                     { icon: Mail, label: "Email", value: "info@aurafinsurance.com" },
-                    { icon: MapPin, label: "Address", value: "Mumbai, Maharashtra, India" },
+                    { icon: MapPin, label: "Address", value: "Kenyatta Ave, Nairobi, Kenya" },
                   ].map(({ icon: Icon, label, value }) => (
                     <div key={label} className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
@@ -63,7 +63,7 @@ const Contact = () => {
                 </div>
                 <div className="rounded-lg overflow-hidden border border-border h-64">
                   <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d241317.11609823277!2d72.74109995709657!3d19.08219783958221!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be7c6306644edc1%3A0x5da4ed8f8d648c69!2sMumbai%2C%20Maharashtra!5e0!3m2!1sen!2sin!4v1700000000000"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.810610479042!2d36.815174!3d-1.287769!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f10daa420fa1f%3A0xbd5cdbf2e3785818!2s100%20Kenyatta%20Ave%2C%20Nairobi!5e0!3m2!1sen!2ske!4v1770556974950!5m2!1sen!2ske"
                     width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy"
                   />
                 </div>
@@ -106,7 +106,7 @@ const Contact = () => {
       <Footer />
 
       {/* WhatsApp Float */}
-      <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-lg transition-colors">
+      <a href="https://wa.me/254707653218" target="_blank" rel="noopener noreferrer" className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-lg transition-colors">
         <MessageCircle className="h-7 w-7 text-white" />
       </a>
     </div>

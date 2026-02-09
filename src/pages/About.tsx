@@ -54,7 +54,7 @@ const About = () => {
         <section className="bg-gradient-to-br from-primary to-accent text-white py-20">
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>About Auraf Insurance</h1>
-            <p className="text-lg opacity-90 max-w-2xl mx-auto">Redefining insurance distribution in India through technology, transparency, and trust.</p>
+            <p className="text-lg opacity-90 max-w-2xl mx-auto">Redefining insurance distribution in Kenya through technology, transparency, and trust.</p>
           </div>
         </section>
 
@@ -63,8 +63,8 @@ const About = () => {
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
-                { icon: Target, title: "Our Mission", desc: "To make insurance accessible, affordable, and understandable for every Indian family and business." },
-                { icon: Eye, title: "Our Vision", desc: "To become India's most trusted insurance distribution platform, empowering agents and protecting customers." },
+                { icon: Target, title: "Our Mission", desc: "To make insurance accessible, affordable, and understandable for every Kenyan family and business." },
+                { icon: Eye, title: "Our Vision", desc: "To become Kenya's most trusted insurance distribution platform, empowering agents and protecting customers." },
                 { icon: Heart, title: "Core Values", desc: "Transparency, customer-first approach, agent empowerment, innovation, and integrity in everything we do." },
               ].map(({ icon: Icon, title, desc }) => (
                 <Card key={title} className="border-0 shadow-lg text-center">
