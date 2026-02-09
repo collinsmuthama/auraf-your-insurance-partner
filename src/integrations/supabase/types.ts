@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           account_number: string | null
           address: string | null
+          approved_at: string | null
+          approved_by: string | null
           bank_name: string | null
           city: string | null
           created_at: string
@@ -26,6 +28,7 @@ export type Database = {
           experience_years: number | null
           full_name: string
           id: string
+          id_document_url: string | null
           ifsc_code: string | null
           license_number: string | null
           pan_number: string | null
@@ -38,6 +41,8 @@ export type Database = {
         Insert: {
           account_number?: string | null
           address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           bank_name?: string | null
           city?: string | null
           created_at?: string
@@ -46,6 +51,7 @@ export type Database = {
           experience_years?: number | null
           full_name: string
           id?: string
+          id_document_url?: string | null
           ifsc_code?: string | null
           license_number?: string | null
           pan_number?: string | null
@@ -58,6 +64,8 @@ export type Database = {
         Update: {
           account_number?: string | null
           address?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           bank_name?: string | null
           city?: string | null
           created_at?: string
@@ -66,6 +74,7 @@ export type Database = {
           experience_years?: number | null
           full_name?: string
           id?: string
+          id_document_url?: string | null
           ifsc_code?: string | null
           license_number?: string | null
           pan_number?: string | null
@@ -76,6 +85,50 @@ export type Database = {
           status?: string | null
         }
         Relationships: []
+      }
+      agent_commissions: {
+        Row: {
+          agent_user_id: string
+          commission_amount: number
+          commission_percentage: number | null
+          created_at: string
+          customer_name: string | null
+          id: string
+          paid_at: string | null
+          policy_id: string | null
+          status: string
+        }
+        Insert: {
+          agent_user_id: string
+          commission_amount?: number
+          commission_percentage?: number | null
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          paid_at?: string | null
+          policy_id?: string | null
+          status?: string
+        }
+        Update: {
+          agent_user_id?: string
+          commission_amount?: number
+          commission_percentage?: number | null
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          paid_at?: string | null
+          policy_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_commissions_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_policies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contact_messages: {
         Row: {
@@ -107,6 +160,81 @@ export type Database = {
           phone?: string | null
           status?: string | null
           subject?: string
+        }
+        Relationships: []
+      }
+      insurance_policies: {
+        Row: {
+          coverage_details: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          file_url: string | null
+          id: string
+          is_active: boolean
+          name: string
+          policy_type: string
+          premium_range: string | null
+          provider: string | null
+          updated_at: string
+        }
+        Insert: {
+          coverage_details?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          policy_type: string
+          premium_range?: string | null
+          provider?: string | null
+          updated_at?: string
+        }
+        Update: {
+          coverage_details?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          policy_type?: string
+          premium_range?: string | null
+          provider?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -149,15 +277,40 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "agent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -284,6 +437,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "agent"],
+    },
   },
 } as const

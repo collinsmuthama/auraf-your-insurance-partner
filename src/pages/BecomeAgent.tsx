@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle, Users, BadgeDollarSign, TrendingUp, Award } from "lucide-react";
+import { CheckCircle, Users, BadgeDollarSign, TrendingUp, Award, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -21,6 +21,8 @@ const BecomeAgent = () => {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [idFile, setIdFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
     full_name: "", email: "", phone: "", date_of_birth: "",
     address: "", city: "", state: "", pincode: "",
@@ -30,11 +32,32 @@ const BecomeAgent = () => {
 
   const update = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
+  const uploadIdDocument = async (): Promise<string | null> => {
+    if (!idFile) return null;
+    setUploading(true);
+    const fileExt = idFile.name.split(".").pop();
+    const filePath = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const { error } = await supabase.storage.from("agent-documents").upload(filePath, idFile);
+    setUploading(false);
+    if (error) {
+      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+      return null;
+    }
+    const { data: urlData } = supabase.storage.from("agent-documents").getPublicUrl(filePath);
+    return urlData.publicUrl;
+  };
+
   const handleSubmit = async () => {
+    if (!idFile) {
+      toast({ title: "ID Required", description: "Please upload a valid ID document.", variant: "destructive" });
+      return;
+    }
     setLoading(true);
+    const docUrl = await uploadIdDocument();
     const { error } = await supabase.from("agent_applications").insert({
       ...form,
       experience_years: form.experience_years ? parseInt(form.experience_years) : null,
+      id_document_url: docUrl,
     });
     setLoading(false);
     if (error) {
@@ -44,7 +67,7 @@ const BecomeAgent = () => {
     }
   };
 
-  const steps = ["Personal Info", "Experience", "Bank Details"];
+  const steps = ["Personal Info", "Experience", "ID Upload", "Bank Details"];
 
   if (submitted) {
     return (
@@ -139,6 +162,27 @@ const BecomeAgent = () => {
 
                 {step === 2 && (
                   <div className="space-y-4">
+                    <h3 className="text-xl font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>ID Document Upload</h3>
+                    <p className="text-sm text-muted-foreground mb-4">Please upload a valid government-issued ID (Aadhaar, PAN Card, Passport, or Driving License).</p>
+                    <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
+                      <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+                      <Label htmlFor="id-upload" className="cursor-pointer text-primary hover:underline font-medium">
+                        {idFile ? idFile.name : "Click to upload ID document"}
+                      </Label>
+                      <Input
+                        id="id-upload"
+                        type="file"
+                        accept="image/*,.pdf"
+                        className="hidden"
+                        onChange={(e) => setIdFile(e.target.files?.[0] ?? null)}
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">JPG, PNG, or PDF (max 5MB)</p>
+                    </div>
+                  </div>
+                )}
+
+                {step === 3 && (
+                  <div className="space-y-4">
                     <h3 className="text-xl font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>Bank Details</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div><Label>Bank Name</Label><Input value={form.bank_name} onChange={(e) => update("bank_name", e.target.value)} /></div>
@@ -150,11 +194,14 @@ const BecomeAgent = () => {
 
                 <div className="flex justify-between mt-8">
                   <Button variant="outline" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}>Back</Button>
-                  {step < 2 ? (
-                    <Button onClick={() => setStep(step + 1)} className="bg-primary" disabled={step === 0 && (!form.full_name || !form.email || !form.phone)}>Next</Button>
+                  {step < 3 ? (
+                    <Button onClick={() => setStep(step + 1)} className="bg-primary" disabled={
+                      (step === 0 && (!form.full_name || !form.email || !form.phone)) ||
+                      (step === 2 && !idFile)
+                    }>Next</Button>
                   ) : (
-                    <Button onClick={handleSubmit} disabled={loading} className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">
-                      {loading ? "Submitting..." : "Submit Application"}
+                    <Button onClick={handleSubmit} disabled={loading || uploading} className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">
+                      {loading || uploading ? "Submitting..." : "Submit Application"}
                     </Button>
                   )}
                 </div>
