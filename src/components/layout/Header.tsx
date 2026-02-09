@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, LogIn, LayoutDashboard, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
 
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [insuranceOpen, setInsuranceOpen] = useState(false);
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -34,9 +36,24 @@ const Header = () => {
           </div>
 
           <Link to="/contact" className={`text-sm font-medium transition-colors hover:text-primary ${isActive("/contact") ? "text-primary" : "text-foreground"}`}>Contact</Link>
-          <Link to="/become-agent">
-            <Button className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold">Become an Agent</Button>
-          </Link>
+          
+          {user ? (
+            <>
+              <Link to="/dashboard">
+                <Button variant="outline" size="sm" className="gap-1"><LayoutDashboard className="h-4 w-4" /> Dashboard</Button>
+              </Link>
+              <Button variant="ghost" size="sm" onClick={signOut} className="gap-1"><LogOut className="h-4 w-4" /> Logout</Button>
+            </>
+          ) : (
+            <>
+              <Link to="/become-agent">
+                <Button className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold">Become an Agent</Button>
+              </Link>
+              <Link to="/auth">
+                <Button variant="outline" size="sm" className="gap-1"><LogIn className="h-4 w-4" /> Login</Button>
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* Mobile Toggle */}
@@ -60,9 +77,21 @@ const Header = () => {
             </div>
           )}
           <Link to="/contact" className="block py-2.5 text-sm font-medium" onClick={() => setMobileOpen(false)}>Contact</Link>
-          <Link to="/become-agent" onClick={() => setMobileOpen(false)}>
-            <Button className="w-full mt-2 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold">Become an Agent</Button>
-          </Link>
+          {user ? (
+            <>
+              <Link to="/dashboard" className="block py-2.5 text-sm font-medium" onClick={() => setMobileOpen(false)}>Dashboard</Link>
+              <Button variant="ghost" size="sm" onClick={() => { signOut(); setMobileOpen(false); }} className="w-full mt-2">Logout</Button>
+            </>
+          ) : (
+            <>
+              <Link to="/become-agent" onClick={() => setMobileOpen(false)}>
+                <Button className="w-full mt-2 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold">Become an Agent</Button>
+              </Link>
+              <Link to="/auth" onClick={() => setMobileOpen(false)}>
+                <Button variant="outline" className="w-full mt-2">Login</Button>
+              </Link>
+            </>
+          )}
         </div>
       )}
     </header>
