@@ -29,7 +29,7 @@ const Dashboard = () => {
       <Header />
       <main className="flex-1 bg-muted py-8">
         <div className="container mx-auto px-4">
-          {role === "admin" ? <AdminDashboard /> : role === "agent" ? <AgentDashboard /> : (
+          {role === "admin" ? <AdminDashboard /> : role === "agent" ? <AgentDashboard /> : role === "client" ? <ClientDashboard /> : (
             <div className="text-center py-20">
               <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: "Montserrat, sans-serif" }}>Welcome!</h2>
               <p className="text-muted-foreground">Your account has no assigned role yet. Please contact an administrator.</p>
