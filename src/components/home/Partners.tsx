@@ -1,7 +1,18 @@
+import { Building2 } from "lucide-react";
+
 const partners = [
-  "HDFC Life", "ICICI Lombard", "Star Health", "Bajaj Allianz",
-  "Tata AIG", "Max Life", "SBI General", "Kotak Life",
-  "New India Assurance", "LIC", "Reliance General", "Care Health",
+  { name: "Jubilee Insurance", initials: "JI" },
+  { name: "Britam", initials: "BR" },
+  { name: "APA Insurance", initials: "APA" },
+  { name: "CIC Insurance", initials: "CIC" },
+  { name: "UAP Old Mutual", initials: "UAP" },
+  { name: "Madison Insurance", initials: "MI" },
+  { name: "AAR Insurance", initials: "AAR" },
+  { name: "GA Insurance", initials: "GA" },
+  { name: "Heritage Insurance", initials: "HI" },
+  { name: "ICEA Lion", initials: "IL" },
+  { name: "Sanlam Kenya", initials: "SK" },
+  { name: "Kenya Alliance", initials: "KA" },
 ];
 
 const Partners = () => {
@@ -15,9 +26,12 @@ const Partners = () => {
           We work with Kenya's leading insurance companies to bring you the best policies.
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {partners.map((name) => (
-            <div key={name} className="bg-card border border-border rounded-lg p-4 flex items-center justify-center h-20 hover:shadow-md transition-shadow">
-              <span className="text-sm font-semibold text-muted-foreground text-center">{name}</span>
+          {partners.map((partner) => (
+            <div key={partner.name} className="bg-card border border-border rounded-lg p-4 flex flex-col items-center justify-center h-28 hover:shadow-md transition-shadow gap-2">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <span className="text-sm font-bold text-primary">{partner.initials}</span>
+              </div>
+              <span className="text-xs font-semibold text-muted-foreground text-center leading-tight">{partner.name}</span>
             </div>
           ))}
         </div>
