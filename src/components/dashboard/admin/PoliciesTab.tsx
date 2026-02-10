@@ -78,7 +78,7 @@ const PoliciesTab = () => {
               <div><Label>Policy Name *</Label><Input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} /></div>
               <div><Label>Policy Type *</Label><Input placeholder="e.g. Health, Motor, Life" value={form.policy_type} onChange={(e) => setForm(f => ({ ...f, policy_type: e.target.value }))} /></div>
               <div><Label>Provider</Label><Input value={form.provider} onChange={(e) => setForm(f => ({ ...f, provider: e.target.value }))} /></div>
-              <div><Label>Premium Range</Label><Input placeholder="e.g. ₹5,000 - ₹20,000" value={form.premium_range} onChange={(e) => setForm(f => ({ ...f, premium_range: e.target.value }))} /></div>
+              <div><Label>Premium Range</Label><Input placeholder="e.g. KES 5,000 - KES20,000" value={form.premium_range} onChange={(e) => setForm(f => ({ ...f, premium_range: e.target.value }))} /></div>
               <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} /></div>
               <Button onClick={handleAdd} disabled={loading} className="w-full bg-primary">{loading ? "Adding..." : "Add Policy"}</Button>
             </div>

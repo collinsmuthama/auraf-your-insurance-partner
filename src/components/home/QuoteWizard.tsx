@@ -11,7 +11,12 @@ import { CheckCircle, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-const steps = ["Insurance Type", "Choose Policy", "Personal Details", "Review"];
+const steps = ["Service Provider", "Insurance Type", "Choose Policy", "Personal Details", "Review"];
+
+const providers = [
+  { id: "jubilee", name: "Jubilee Insurance" },
+  { id: "ga", name: "GA Insurance" },
+];
 
 interface QuoteWizardProps {
   open: boolean;
@@ -35,6 +40,7 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
   const [filteredPolicies, setFilteredPolicies] = useState<Policy[]>([]);
   const { toast } = useToast();
   const [form, setForm] = useState({
+    service_provider: "",
     insurance_type: "",
     selected_policy_id: "",
     selected_policy_name: "",
@@ -72,6 +78,7 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
   const handleSubmit = async () => {
     setLoading(true);
     const { error } = await supabase.from("quote_requests").insert({
+      service_provider: form.service_provider,
       insurance_type: form.insurance_type,
       full_name: form.full_name,
       email: form.email,
@@ -93,16 +100,17 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
   const reset = () => {
     setStep(0);
     setSubmitted(false);
-    setForm({ insurance_type: "", selected_policy_id: "", selected_policy_name: "", full_name: "", email: "", phone: "", age: "", coverage_amount: "", message: "" });
+    setForm({ service_provider: "", insurance_type: "", selected_policy_id: "", selected_policy_name: "", full_name: "", email: "", phone: "", age: "", coverage_amount: "", message: "" });
     onOpenChange(false);
   };
 
   const insuranceTypes = [...new Set(policies.map(p => p.policy_type))];
 
   const canNext = () => {
-    if (step === 0) return !!form.insurance_type;
-    if (step === 1) return true; // policy selection is optional
-    if (step === 2) return form.full_name && form.email && form.phone;
+    if (step === 0) return !!form.service_provider;
+    if (step === 1) return !!form.insurance_type;
+    if (step === 2) return true; // policy selection is optional
+    if (step === 3) return form.full_name && form.email && form.phone;
     return true;
   };
 
@@ -138,6 +146,20 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
 
             {step === 0 && (
               <div className="space-y-4">
+                <Label>Which service provider would you like a quote from?</Label>
+                <Select value={form.service_provider} onValueChange={(v) => update("service_provider", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select service provider" /></SelectTrigger>
+                  <SelectContent>
+                    {providers.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {step === 1 && (
+              <div className="space-y-4">
                 <Label>What type of insurance are you looking for?</Label>
                 <Select value={form.insurance_type} onValueChange={(v) => update("insurance_type", v)}>
                   <SelectTrigger><SelectValue placeholder="Select insurance type" /></SelectTrigger>
@@ -153,7 +175,7 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
               </div>
             )}
 
-            {step === 1 && (
+            {step === 2 && (
               <div className="space-y-4">
                 <Label>Choose a specific policy (optional)</Label>
                 {filteredPolicies.length === 0 ? (
@@ -192,7 +214,7 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
               </div>
             )}
 
-            {step === 2 && (
+            {step === 3 && (
               <div className="space-y-4">
                 <div>
                   <Label>Full Name</Label>
@@ -217,8 +239,9 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
               </div>
             )}
 
-            {step === 3 && (
+            {step === 4 && (
               <div className="space-y-3 bg-muted rounded-lg p-4">
+                <p className="text-sm"><strong>Provider:</strong> {providers.find(p => p.id === form.service_provider)?.name}</p>
                 <p className="text-sm"><strong>Type:</strong> {form.insurance_type}</p>
                 {selectedPolicy && (
                   <>
@@ -237,7 +260,7 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
 
             <div className="flex justify-between mt-4">
               <Button variant="outline" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}>Back</Button>
-              {step < 3 ? (
+              {step < 4 ? (
                 <Button onClick={() => setStep(step + 1)} disabled={!canNext()} className="bg-primary">Next</Button>
               ) : (
                 <Button onClick={handleSubmit} disabled={loading} className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">

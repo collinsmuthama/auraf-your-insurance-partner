@@ -54,16 +54,38 @@ const BecomeAgent = () => {
     }
     setLoading(true);
     const docUrl = await uploadIdDocument();
-    const { error } = await supabase.from("agent_applications").insert({
-      ...form,
-      experience_years: form.experience_years ? parseInt(form.experience_years) : null,
-      id_document_url: docUrl,
-    });
-    setLoading(false);
-    if (error) {
-      toast({ title: "Error", description: "Failed to submit application.", variant: "destructive" });
-    } else {
-      setSubmitted(true);
+    
+    if (!docUrl) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from("agent_applications").insert({
+        ...form,
+        experience_years: form.experience_years ? parseInt(form.experience_years) : null,
+        id_document_url: docUrl,
+      });
+      
+      if (error) {
+        console.error("Submission error:", error);
+        toast({ 
+          title: "Error", 
+          description: error.message || "Failed to submit application. Please try again.",
+          variant: "destructive" 
+        });
+      } else {
+        setSubmitted(true);
+      }
+    } catch (err: any) {
+      console.error("Unexpected error:", err);
+      toast({ 
+        title: "Error", 
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive" 
+      });
+    } finally {
+      setLoading(false);
     }
   };
 

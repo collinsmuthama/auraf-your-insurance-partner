@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { CheckCircle, XCircle, Eye, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 interface AgentApp {
   id: string;
@@ -32,6 +34,9 @@ const AgentApprovalsTab = () => {
   const [apps, setApps] = useState<AgentApp[]>([]);
   const [selected, setSelected] = useState<AgentApp | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [rejectionMessage, setRejectionMessage] = useState("");
+  const [pendingAction, setPendingAction] = useState<{ action: string; appId: string } | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -43,17 +48,71 @@ const AgentApprovalsTab = () => {
 
   useEffect(() => { fetchApps(); }, []);
 
+  const sendEmailNotification = async (email: string, fullName: string, status: string, message?: string) => {
+    try {
+      const { error } = await supabase.functions.invoke("send-email", {
+        body: {
+          to: email,
+          subject: status === "approved" ? "Agent Registration Approved ✅" : "Agent Registration Decision",
+          html: status === "approved" 
+            ? `<h2>Welcome, ${fullName}!</h2>
+               <p>Your agent registration has been <strong>approved</strong>.</p>
+               <p>You can now log in and start using your agent dashboard.</p>
+               <p>Best regards,<br/>Auraf Insurance Team</p>`
+            : `<h2>Agent Registration Status Update</h2>
+               <p>Hi ${fullName},</p>
+               <p>Your agent registration has been <strong>rejected</strong>.</p>
+               ${message ? `<p><strong>Reason:</strong></p><p>${message}</p>` : ""}
+               <p>If you have any questions, please contact our support team.</p>
+               <p>Best regards,<br/>Auraf Insurance Team</p>`
+        }
+      });
+
+      if (error) {
+        console.error("Email send error:", error);
+        toast({ 
+          title: "Warning", 
+          description: "Application updated but email notification failed. You may need to contact the agent manually.",
+          variant: "destructive" 
+        });
+      }
+    } catch (err) {
+      console.error("Email function error:", err);
+      toast({ 
+        title: "Warning", 
+        description: "Application updated but email notification failed. You may need to contact the agent manually.",
+        variant: "destructive" 
+      });
+    }
+  };
+
   const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from("agent_applications").update({
-      status,
-      approved_by: user?.id,
-      approved_at: new Date().toISOString(),
-    }).eq("id", id);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Updated", description: `Application ${status}.` });
-      fetchApps();
+    setUpdating(true);
+    const app = apps.find(a => a.id === id);
+    
+    if (!app) return;
+
+    try {
+      const { error } = await supabase.from("agent_applications").update({
+        status,
+        approved_by: user?.id,
+        approved_at: new Date().toISOString(),
+      }).eq("id", id);
+
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } else {
+        // Send email notification
+        await sendEmailNotification(app.email, app.full_name, status, rejectionMessage);
+        
+        toast({ title: "Success", description: `Application ${status}. Email notification sent to ${app.email}.` });
+        setSelected(null);
+        setRejectionMessage("");
+        setPendingAction(null);
+        fetchApps();
+      }
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -93,8 +152,8 @@ const AgentApprovalsTab = () => {
                     <Button size="sm" variant="outline" onClick={() => setSelected(a)}><Eye className="h-4 w-4" /></Button>
                     {a.status === "pending" && (
                       <>
-                        <Button size="sm" variant="outline" className="text-green-600" onClick={() => updateStatus(a.id, "approved")}><CheckCircle className="h-4 w-4" /></Button>
-                        <Button size="sm" variant="outline" className="text-red-600" onClick={() => updateStatus(a.id, "rejected")}><XCircle className="h-4 w-4" /></Button>
+                        <Button size="sm" variant="outline" className="text-green-600" onClick={() => { setSelected(a); setPendingAction({ action: "approved", appId: a.id }); }}><CheckCircle className="h-4 w-4" /></Button>
+                        <Button size="sm" variant="outline" className="text-red-600" onClick={() => { setSelected(a); setPendingAction({ action: "rejected", appId: a.id }); }}><XCircle className="h-4 w-4" /></Button>
                       </>
                     )}
                   </TableCell>
@@ -105,36 +164,69 @@ const AgentApprovalsTab = () => {
         )}
       </CardContent>
 
-      <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
+      <Dialog open={!!selected} onOpenChange={() => { setSelected(null); setPendingAction(null); setRejectionMessage(""); }}>
         <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Application Details</DialogTitle>
+            <DialogTitle>{pendingAction ? `${pendingAction.action === "approved" ? "Approve" : "Reject"} Application` : "Application Details"}</DialogTitle>
           </DialogHeader>
           {selected && (
             <div className="space-y-3 text-sm">
-              <div className="grid grid-cols-2 gap-3">
-                <div><span className="font-medium">Name:</span> {selected.full_name}</div>
-                <div><span className="font-medium">Email:</span> {selected.email}</div>
-                <div><span className="font-medium">Phone:</span> {selected.phone}</div>
-                <div><span className="font-medium">City:</span> {selected.city || "—"}</div>
-                <div><span className="font-medium">State:</span> {selected.state || "—"}</div>
-                <div><span className="font-medium">Experience:</span> {selected.experience_years ?? "—"} years</div>
-                <div><span className="font-medium">Previous Co:</span> {selected.previous_company || "—"}</div>
-                <div><span className="font-medium">License:</span> {selected.license_number || "—"}</div>
-                <div><span className="font-medium">PAN:</span> {selected.pan_number || "—"}</div>
-                <div><span className="font-medium">Bank:</span> {selected.bank_name || "—"}</div>
-                <div><span className="font-medium">Account:</span> {selected.account_number || "—"}</div>
-                <div><span className="font-medium">IFSC:</span> {selected.ifsc_code || "—"}</div>
-              </div>
-              {selected.id_document_url && (
-                <div>
-                  <span className="font-medium">ID Document:</span>
-                  <a href={selected.id_document_url} target="_blank" rel="noopener noreferrer" className="ml-2 text-primary hover:underline inline-flex items-center gap-1">
-                    <Download className="h-3 w-3" /> View Document
-                  </a>
+              {!pendingAction ? (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><span className="font-medium">Name:</span> {selected.full_name}</div>
+                    <div><span className="font-medium">Email:</span> {selected.email}</div>
+                    <div><span className="font-medium">Phone:</span> {selected.phone}</div>
+                    <div><span className="font-medium">City:</span> {selected.city || "—"}</div>
+                    <div><span className="font-medium">State:</span> {selected.state || "—"}</div>
+                    <div><span className="font-medium">Experience:</span> {selected.experience_years ?? "—"} years</div>
+                    <div><span className="font-medium">Previous Co:</span> {selected.previous_company || "—"}</div>
+                    <div><span className="font-medium">License:</span> {selected.license_number || "—"}</div>
+                    <div><span className="font-medium">PAN:</span> {selected.pan_number || "—"}</div>
+                    <div><span className="font-medium">Bank:</span> {selected.bank_name || "—"}</div>
+                    <div><span className="font-medium">Account:</span> {selected.account_number || "—"}</div>
+                    <div><span className="font-medium">IFSC:</span> {selected.ifsc_code || "—"}</div>
+                  </div>
+                  {selected.id_document_url && (
+                    <div>
+                      <span className="font-medium">ID Document:</span>
+                      <a href={selected.id_document_url} target="_blank" rel="noopener noreferrer" className="ml-2 text-primary hover:underline inline-flex items-center gap-1">
+                        <Download className="h-3 w-3" /> View Document
+                      </a>
+                    </div>
+                  )}
+                  <div><span className="font-medium">Status:</span> <Badge className={statusColor(selected.status)}>{selected.status ?? "pending"}</Badge></div>
+                </>
+              ) : (
+                <div className="space-y-4">
+                  <p><strong>Name:</strong> {selected.full_name}</p>
+                  <p><strong>Email:</strong> {selected.email}</p>
+                  
+                  {pendingAction.action === "rejected" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="rejection-reason">Reason for Rejection (Optional)</Label>
+                      <Textarea 
+                        id="rejection-reason"
+                        placeholder="Explain why this application is being rejected (this will be sent to the applicant)..."
+                        value={rejectionMessage}
+                        onChange={(e) => setRejectionMessage(e.target.value)}
+                        className="min-h-24"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => { setPendingAction(null); setRejectionMessage(""); }}>Cancel</Button>
+                    <Button 
+                      onClick={() => updateStatus(pendingAction.appId, pendingAction.action)} 
+                      disabled={updating}
+                      className={pendingAction.action === "approved" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}
+                    >
+                      {updating ? "Processing..." : `${pendingAction.action === "approved" ? "Approve" : "Reject"} & Send Email`}
+                    </Button>
+                  </div>
                 </div>
               )}
-              <div><span className="font-medium">Status:</span> <Badge className={statusColor(selected.status)}>{selected.status ?? "pending"}</Badge></div>
             </div>
           )}
         </DialogContent>
