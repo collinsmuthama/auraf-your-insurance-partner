@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import AdminDashboard from "@/components/dashboard/AdminDashboard";
 import AgentDashboard from "@/components/dashboard/AgentDashboard";
+import ClientDashboard from "@/components/dashboard/ClientDashboard";
 import { Loader2 } from "lucide-react";
 
 const Dashboard = () => {
