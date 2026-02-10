@@ -35,9 +35,9 @@ const ClientDashboard = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Account Status</CardTitle>
-            <ShieldCheck className="h-5 w-5 text-green-600" />
+            <ShieldCheck className="h-5 w-5 text-secondary" />
           </CardHeader>
-          <CardContent><div className="text-lg font-semibold text-green-700">Active</div></CardContent>
+          <CardContent><div className="text-lg font-semibold text-secondary">Active</div></CardContent>
         </Card>
       </div>
 
