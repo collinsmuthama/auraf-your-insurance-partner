@@ -249,6 +249,7 @@ export type Database = {
           insurance_type: string
           message: string | null
           phone: string
+          service_provider: string | null
           status: string | null
         }
         Insert: {
@@ -261,6 +262,7 @@ export type Database = {
           insurance_type: string
           message?: string | null
           phone: string
+          service_provider?: string | null
           status?: string | null
         }
         Update: {
@@ -273,6 +275,7 @@ export type Database = {
           insurance_type?: string
           message?: string | null
           phone?: string
+          service_provider?: string | null
           status?: string | null
         }
         Relationships: []
