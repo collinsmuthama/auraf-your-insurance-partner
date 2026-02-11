@@ -3,12 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 const ClientDashboard = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [policies, setPolicies] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>(null);
+  const [showDeactivate, setShowDeactivate] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!user) return;
@@ -17,6 +23,24 @@ const ClientDashboard = () => {
     supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle()
       .then(({ data }) => setProfile(data));
   }, [user]);
+
+  const handleDeactivate = async () => {
+    if (!user) return;
+    setDeactivating(true);
+    try {
+      const { error } = await supabase.functions.invoke("deactivate-account", {
+        body: { user_id: user.id },
+      });
+      if (error) throw error;
+      toast({ title: "Account Deactivated", description: "Your account has been deactivated. You will be signed out." });
+      setTimeout(() => signOut(), 2000);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to deactivate account.", variant: "destructive" });
+    } finally {
+      setDeactivating(false);
+      setShowDeactivate(false);
+    }
+  };
 
   return (
     <div>
@@ -41,7 +65,7 @@ const ClientDashboard = () => {
         </Card>
       </div>
 
-      <Card>
+      <Card className="mb-6">
         <CardHeader>
           <CardTitle>Browse Insurance Policies</CardTitle>
         </CardHeader>
@@ -72,6 +96,38 @@ const ClientDashboard = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Account Deactivation */}
+      <Card className="border-destructive/30">
+        <CardHeader>
+          <CardTitle className="text-destructive flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" /> Danger Zone
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Deactivating your account will disable your login and hide your profile. This action can only be reversed by an administrator.
+          </p>
+          <Button variant="destructive" onClick={() => setShowDeactivate(true)}>Deactivate My Account</Button>
+        </CardContent>
+      </Card>
+
+      <Dialog open={showDeactivate} onOpenChange={setShowDeactivate}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Account Deactivation</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to deactivate your account? You will be signed out immediately and won't be able to log back in until an admin reactivates your account.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowDeactivate(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeactivate} disabled={deactivating}>
+              {deactivating ? "Deactivating..." : "Yes, Deactivate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
