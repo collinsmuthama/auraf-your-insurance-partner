@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,12 +10,7 @@ import { CheckCircle, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-const steps = ["Service Provider", "Insurance Type", "Choose Policy", "Personal Details", "Review"];
-
-const providers = [
-  { id: "jubilee", name: "Jubilee Insurance" },
-  { id: "ga", name: "GA Insurance" },
-];
+const steps = ["Provider", "Insurance Type", "Policy", "Details", "Review"];
 
 interface QuoteWizardProps {
   open: boolean;
@@ -36,8 +30,7 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [policies, setPolicies] = useState<Policy[]>([]);
-  const [filteredPolicies, setFilteredPolicies] = useState<Policy[]>([]);
+  const [allPolicies, setAllPolicies] = useState<Policy[]>([]);
   const { toast } = useToast();
   const [form, setForm] = useState({
     service_provider: "",
@@ -56,20 +49,26 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
     if (open) {
       supabase.from("insurance_policies").select("*").eq("is_active", true)
         .order("created_at", { ascending: false })
-        .then(({ data }) => setPolicies((data as Policy[]) ?? []));
+        .then(({ data }) => setAllPolicies((data as Policy[]) ?? []));
     }
   }, [open]);
 
-  useEffect(() => {
-    if (form.insurance_type) {
-      setFilteredPolicies(
-        policies.filter(p => p.policy_type.toLowerCase() === form.insurance_type.toLowerCase())
-      );
-      setForm(f => ({ ...f, selected_policy_id: "", selected_policy_name: "" }));
-    }
-  }, [form.insurance_type, policies]);
-
   const update = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
+
+  // Derived data based on selections
+  const providers = [...new Set(allPolicies.map(p => p.provider).filter(Boolean))] as string[];
+  
+  const insuranceTypes = [...new Set(
+    allPolicies
+      .filter(p => p.provider === form.service_provider)
+      .map(p => p.policy_type)
+  )];
+
+  const filteredPolicies = allPolicies.filter(
+    p => p.provider === form.service_provider && p.policy_type === form.insurance_type
+  );
+
+  const selectedPolicy = allPolicies.find(p => p.id === form.selected_policy_id);
 
   const selectPolicy = (policy: Policy) => {
     setForm(f => ({ ...f, selected_policy_id: policy.id, selected_policy_name: policy.name }));
@@ -104,17 +103,13 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
     onOpenChange(false);
   };
 
-  const insuranceTypes = [...new Set(policies.map(p => p.policy_type))];
-
   const canNext = () => {
     if (step === 0) return !!form.service_provider;
     if (step === 1) return !!form.insurance_type;
-    if (step === 2) return true; // policy selection is optional
+    if (step === 2) return true;
     if (step === 3) return form.full_name && form.email && form.phone;
     return true;
   };
-
-  const selectedPolicy = policies.find(p => p.id === form.selected_policy_id);
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); else onOpenChange(o); }}>
@@ -144,62 +139,85 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
               ))}
             </div>
 
+            {/* Step 0: Select Provider */}
             {step === 0 && (
-              <div className="space-y-4">
-                <Label>Which service provider would you like a quote from?</Label>
-                <Select value={form.service_provider} onValueChange={(v) => update("service_provider", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select service provider" /></SelectTrigger>
-                  <SelectContent>
+              <div className="space-y-3">
+                <Label>Select an insurance provider</Label>
+                {providers.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No providers available. Please add policies first.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
                     {providers.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      <Card
+                        key={p}
+                        className={`cursor-pointer transition-all ${form.service_provider === p ? "ring-2 ring-primary border-primary" : "hover:border-primary/50"}`}
+                        onClick={() => {
+                          update("service_provider", p);
+                          update("insurance_type", "");
+                          update("selected_policy_id", "");
+                          update("selected_policy_name", "");
+                        }}
+                      >
+                        <CardContent className="p-4 text-center">
+                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
+                            <span className="text-primary font-bold text-lg">{p.charAt(0)}</span>
+                          </div>
+                          <p className="font-medium text-sm">{p}</p>
+                        </CardContent>
+                      </Card>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
+                )}
               </div>
             )}
 
+            {/* Step 1: Select Insurance Type */}
             {step === 1 && (
-              <div className="space-y-4">
-                <Label>What type of insurance are you looking for?</Label>
-                <Select value={form.insurance_type} onValueChange={(v) => update("insurance_type", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select insurance type" /></SelectTrigger>
-                  <SelectContent>
-                    {(insuranceTypes.length > 0
-                      ? insuranceTypes
-                      : ["Health Insurance", "Motor Insurance", "Life Insurance", "Property Insurance", "Travel Insurance", "Business Insurance"]
-                    ).map((t) => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
+              <div className="space-y-3">
+                <Label>What type of insurance from {form.service_provider}?</Label>
+                {insuranceTypes.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No insurance types found for this provider.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {insuranceTypes.map((t) => (
+                      <Card
+                        key={t}
+                        className={`cursor-pointer transition-all ${form.insurance_type === t ? "ring-2 ring-primary border-primary" : "hover:border-primary/50"}`}
+                        onClick={() => {
+                          update("insurance_type", t);
+                          update("selected_policy_id", "");
+                          update("selected_policy_name", "");
+                        }}
+                      >
+                        <CardContent className="p-4 text-center">
+                          <FileText className="h-6 w-6 text-primary mx-auto mb-2" />
+                          <p className="font-medium text-sm">{t}</p>
+                        </CardContent>
+                      </Card>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </div>
+                )}
               </div>
             )}
 
+            {/* Step 2: Select Policy */}
             {step === 2 && (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <Label>Choose a specific policy (optional)</Label>
                 {filteredPolicies.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No specific policies found for "{form.insurance_type}". You can proceed to get a general quote.</p>
+                  <p className="text-muted-foreground text-sm">No specific policies found. You can proceed to get a general quote.</p>
                 ) : (
                   <div className="space-y-3 max-h-60 overflow-y-auto">
                     {filteredPolicies.map((p) => (
                       <Card
                         key={p.id}
-                        className={`cursor-pointer transition-all ${
-                          form.selected_policy_id === p.id
-                            ? "ring-2 ring-primary border-primary"
-                            : "hover:border-primary/50"
-                        }`}
+                        className={`cursor-pointer transition-all ${form.selected_policy_id === p.id ? "ring-2 ring-primary border-primary" : "hover:border-primary/50"}`}
                         onClick={() => selectPolicy(p)}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <FileText className="h-4 w-4 text-primary flex-shrink-0" />
-                                <span className="font-semibold text-sm">{p.name}</span>
-                              </div>
-                              {p.provider && <p className="text-xs text-muted-foreground">Provider: {p.provider}</p>}
+                              <span className="font-semibold text-sm">{p.name}</span>
                               {p.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{p.description}</p>}
                             </div>
                             {p.premium_range && (
@@ -214,39 +232,25 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
               </div>
             )}
 
+            {/* Step 3: Personal Details */}
             {step === 3 && (
               <div className="space-y-4">
-                <div>
-                  <Label>Full Name</Label>
-                  <Input value={form.full_name} onChange={(e) => update("full_name", e.target.value)} placeholder="Enter your full name" />
-                </div>
-                <div>
-                  <Label>Email</Label>
-                  <Input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} placeholder="you@example.com" />
-                </div>
-                <div>
-                  <Label>Phone</Label>
-                  <Input value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="+254 712 345 678" />
-                </div>
-                <div>
-                  <Label>Age</Label>
-                  <Input type="number" value={form.age} onChange={(e) => update("age", e.target.value)} placeholder="Your age" />
-                </div>
-                <div>
-                  <Label>Additional Requirements (Optional)</Label>
-                  <Textarea value={form.message} onChange={(e) => update("message", e.target.value)} placeholder="Any specific needs..." />
-                </div>
+                <div><Label>Full Name</Label><Input value={form.full_name} onChange={(e) => update("full_name", e.target.value)} placeholder="Enter your full name" /></div>
+                <div><Label>Email</Label><Input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} placeholder="you@example.com" /></div>
+                <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="+254 712 345 678" /></div>
+                <div><Label>Age</Label><Input type="number" value={form.age} onChange={(e) => update("age", e.target.value)} placeholder="Your age" /></div>
+                <div><Label>Additional Requirements (Optional)</Label><Textarea value={form.message} onChange={(e) => update("message", e.target.value)} placeholder="Any specific needs..." /></div>
               </div>
             )}
 
+            {/* Step 4: Review */}
             {step === 4 && (
               <div className="space-y-3 bg-muted rounded-lg p-4">
-                <p className="text-sm"><strong>Provider:</strong> {providers.find(p => p.id === form.service_provider)?.name}</p>
+                <p className="text-sm"><strong>Provider:</strong> {form.service_provider}</p>
                 <p className="text-sm"><strong>Type:</strong> {form.insurance_type}</p>
                 {selectedPolicy && (
                   <>
                     <p className="text-sm"><strong>Policy:</strong> {selectedPolicy.name}</p>
-                    {selectedPolicy.provider && <p className="text-sm"><strong>Provider:</strong> {selectedPolicy.provider}</p>}
                     {selectedPolicy.premium_range && <p className="text-sm"><strong>Premium:</strong> {selectedPolicy.premium_range}</p>}
                   </>
                 )}

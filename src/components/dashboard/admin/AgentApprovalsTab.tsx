@@ -236,9 +236,26 @@ const AgentApprovalsTab = () => {
                   {selected.id_document_url && (
                     <div>
                       <span className="font-medium">ID Document:</span>
-                      <a href={selected.id_document_url} target="_blank" rel="noopener noreferrer" className="ml-2 text-primary hover:underline inline-flex items-center gap-1">
+                      <Button
+                        variant="link"
+                        className="ml-2 text-primary hover:underline inline-flex items-center gap-1 p-0 h-auto"
+                        onClick={async () => {
+                          // Extract file path from the URL
+                          const url = selected.id_document_url!;
+                          const bucketPath = url.split("/agent-documents/").pop();
+                          if (!bucketPath) return;
+                          const { data, error } = await supabase.storage
+                            .from("agent-documents")
+                            .createSignedUrl(bucketPath, 3600);
+                          if (error || !data?.signedUrl) {
+                            toast({ title: "Error", description: "Could not generate document link.", variant: "destructive" });
+                          } else {
+                            window.open(data.signedUrl, "_blank");
+                          }
+                        }}
+                      >
                         <Download className="h-3 w-3" /> View Document
-                      </a>
+                      </Button>
                     </div>
                   )}
                   <div><span className="font-medium">Status:</span> <Badge className={statusColor(selected.status)}>{selected.status ?? "pending"}</Badge></div>
