@@ -3,10 +3,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
 
 const testimonials = [
-  { name: "Rajesh Kumar", role: "Insurance Agent, Delhi", text: "Joining Auraf was the best decision of my career. The instant payout system and dedicated support have helped me grow my business 3x in just 6 months." },
-  { name: "Priya Sharma", role: "Insurance Advisor, Mumbai", text: "The platform is incredibly easy to use. I can compare policies and close deals faster than ever before. My clients love the transparency." },
-  { name: "Amit Patel", role: "Senior Agent, Ahmedabad", text: "Auraf's training programs and the wide range of insurance products have made it simple to serve diverse customer needs. Highly recommended!" },
-  { name: "Sneha Reddy", role: "Insurance Consultant, Hyderabad", text: "The commission structure is unmatched in the industry. I earn more while providing better service to my clients. Win-win!" },
+  { name: "James Mwangi", role: "Insurance Agent, Nairobi", text: "Joining Auraf was the best decision of my career. The instant payout system and dedicated support have helped me grow my business 3x in just 6 months." },
+  { name: "Violet Njeri", role: "Insurance Advisor, Nairobi", text: "The platform is incredibly easy to use. I can compare policies and close deals faster than ever before. My clients love the transparency." },
+  { name: "Angela Nasembo", role: "Senior Agent, Nairobi", text: "Auraf's training programs and the wide range of insurance products have made it simple to serve diverse customer needs. Highly recommended!" },
+  { name: "Andrew John", role: "Insurance Consultant, Nairobi", text: "The commission structure is unmatched in the industry. I earn more while providing better service to my clients. Win-win!" },
 ];
 
 const Testimonials = () => {

@@ -34,7 +34,7 @@ const AgentDashboard = () => {
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Earnings</CardTitle>
             <DollarSign className="h-5 w-5 text-secondary" />
           </CardHeader>
-          <CardContent><div className="text-3xl font-bold">₹{totalEarned.toLocaleString()}</div></CardContent>
+          <CardContent><div className="text-3xl font-bold">KES {totalEarned.toLocaleString()}</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">

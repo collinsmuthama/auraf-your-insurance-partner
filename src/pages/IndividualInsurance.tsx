@@ -19,7 +19,7 @@ const policies = [
   {
     icon: Shield, title: "Life Insurance",
     desc: "Secure your family's future with term plans, endowment, and ULIPs.",
-    features: ["Term insurance up to ₹2 Crore", "Tax benefits under Section 80C", "Riders for critical illness & accident", "Flexible premium payment options"],
+    features: ["Term insurance up to KES 2,000", "Tax benefits under Section 80C", "Riders for critical illness & accident", "Flexible premium payment options"],
   },
   {
     icon: Plane, title: "Travel Insurance",

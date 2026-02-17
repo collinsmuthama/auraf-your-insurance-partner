@@ -6,9 +6,9 @@ import { useEffect, useState, useRef } from "react";
 
 const stats = [
   { label: "Policies Sold", value: 15000, suffix: "+" },
-  { label: "Agents Onboarded", value: 500, suffix: "+" },
+  { label: "Agents Onboarded", value: 100, suffix: "+" },
   { label: "Years in Business", value: 5, suffix: "+" },
-  { label: "Partner Companies", value: 30, suffix: "+" },
+  { label: "Partner Companies", value: 10, suffix: "+" },
 ];
 
 const AnimatedCounter = ({ target, suffix }: { target: number; suffix: string }) => {
@@ -39,9 +39,9 @@ const AnimatedCounter = ({ target, suffix }: { target: number; suffix: string })
 };
 
 const team = [
-  { name: "Vikram Shah", role: "Founder & CEO", desc: "15+ years in insurance distribution" },
+  { name: "Fiona Awino", role: "Founder & CEO", desc: "5+ years in insurance distribution" },
   { name: "Anita Mehta", role: "Head of Operations", desc: "Expert in process optimization" },
-  { name: "Suresh Rajan", role: "Chief Technology Officer", desc: "Building digital-first insurance solutions" },
+  { name: "Collins Muthama", role: "Chief Technology Officer", desc: "Building digital-first insurance solutions" },
   { name: "Pooja Iyer", role: "Head of Agent Relations", desc: "Dedicated to agent success and growth" },
 ];
 

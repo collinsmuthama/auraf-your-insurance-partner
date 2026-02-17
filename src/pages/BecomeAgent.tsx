@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -22,13 +22,15 @@ const BecomeAgent = () => {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [idFile, setIdFile] = useState<File | null>(null);
+  const [idPreview, setIdPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [form, setForm] = useState({
-    full_name: "", email: "", phone: "", date_of_birth: "",
-    address: "", city: "", state: "", pincode: "",
-    experience_years: "", previous_company: "", license_number: "",
-    pan_number: "", bank_name: "", account_number: "", ifsc_code: "",
-  });
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", date_of_birth: "" });
+
+  useEffect(() => {
+    return () => {
+      if (idPreview) URL.revokeObjectURL(idPreview);
+    };
+  }, [idPreview]);
 
   const update = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -62,8 +64,10 @@ const BecomeAgent = () => {
 
     try {
       const { error } = await supabase.from("agent_applications").insert({
-        ...form,
-        experience_years: form.experience_years ? parseInt(form.experience_years) : null,
+        full_name: form.full_name,
+        email: form.email,
+        phone: form.phone,
+        date_of_birth: form.date_of_birth,
         id_document_url: docUrl,
       });
       
@@ -89,7 +93,7 @@ const BecomeAgent = () => {
     }
   };
 
-  const steps = ["Personal Info", "Experience", "ID Upload", "Bank Details"];
+  const steps = ["Personal Info", "ID Upload"];
 
   if (submitted) {
     return (
@@ -161,28 +165,10 @@ const BecomeAgent = () => {
                       <div><Label>Email *</Label><Input type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required /></div>
                       <div><Label>Phone *</Label><Input value={form.phone} onChange={(e) => update("phone", e.target.value)} required /></div>
                     </div>
-                    <div><Label>Address</Label><Input value={form.address} onChange={(e) => update("address", e.target.value)} /></div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div><Label>City</Label><Input value={form.city} onChange={(e) => update("city", e.target.value)} /></div>
-                      <div><Label>State</Label><Input value={form.state} onChange={(e) => update("state", e.target.value)} /></div>
-                      <div><Label>Pincode</Label><Input value={form.pincode} onChange={(e) => update("pincode", e.target.value)} /></div>
-                    </div>
                   </div>
                 )}
 
                 {step === 1 && (
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>Professional Experience</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div><Label>Years of Experience</Label><Input type="number" value={form.experience_years} onChange={(e) => update("experience_years", e.target.value)} /></div>
-                      <div><Label>Previous Company</Label><Input value={form.previous_company} onChange={(e) => update("previous_company", e.target.value)} /></div>
-                      <div><Label>License Number</Label><Input value={form.license_number} onChange={(e) => update("license_number", e.target.value)} /></div>
-                      <div><Label>PAN Number</Label><Input value={form.pan_number} onChange={(e) => update("pan_number", e.target.value)} /></div>
-                    </div>
-                  </div>
-                )}
-
-                {step === 2 && (
                   <div className="space-y-4">
                     <h3 className="text-xl font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>ID Document Upload</h3>
                     <p className="text-sm text-muted-foreground mb-4">Please upload a valid government-issued ID (Aadhaar, PAN Card, Passport, or Driving License).</p>
@@ -194,35 +180,46 @@ const BecomeAgent = () => {
                       <Input
                         id="id-upload"
                         type="file"
-                        accept="image/*,.pdf"
+                        accept=".pdf"
                         className="hidden"
-                        onChange={(e) => setIdFile(e.target.files?.[0] ?? null)}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] ?? null;
+                          if (!file) {
+                            if (idPreview) { URL.revokeObjectURL(idPreview); setIdPreview(null); }
+                            setIdFile(null);
+                            return;
+                          }
+                          if (file.type !== "application/pdf") {
+                            toast({ title: "Invalid format", description: "Only PDF documents are accepted.", variant: "destructive" });
+                            e.currentTarget.value = "";
+                            return;
+                          }
+                          if (idPreview) URL.revokeObjectURL(idPreview);
+                          const url = URL.createObjectURL(file);
+                          setIdPreview(url);
+                          setIdFile(file);
+                        }}
                       />
-                      <p className="text-xs text-muted-foreground mt-2">JPG, PNG, or PDF (max 5MB)</p>
-                    </div>
-                  </div>
-                )}
-
-                {step === 3 && (
-                  <div className="space-y-4">
-                    <h3 className="text-xl font-bold mb-4" style={{ fontFamily: 'Montserrat, sans-serif' }}>Bank Details</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div><Label>Bank Name</Label><Input value={form.bank_name} onChange={(e) => update("bank_name", e.target.value)} /></div>
-                      <div><Label>Account Number</Label><Input value={form.account_number} onChange={(e) => update("account_number", e.target.value)} /></div>
-                      <div><Label>IFSC Code</Label><Input value={form.ifsc_code} onChange={(e) => update("ifsc_code", e.target.value)} /></div>
+                      <p className="text-xs text-muted-foreground mt-2">PDF only (max 5MB)</p>
+                      {idPreview && (
+                        <div className="mt-4">
+                          <object data={idPreview} type="application/pdf" width="100%" height="400">
+                            <p className="text-sm">Preview not available. <a href={idPreview} target="_blank" rel="noreferrer" className="text-primary underline">Open PDF</a></p>
+                          </object>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
                 <div className="flex justify-between mt-8">
                   <Button variant="outline" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0}>Back</Button>
-                  {step < 3 ? (
+                  {step < steps.length - 1 ? (
                     <Button onClick={() => setStep(step + 1)} className="bg-primary" disabled={
-                      (step === 0 && (!form.full_name || !form.email || !form.phone)) ||
-                      (step === 2 && !idFile)
+                      (step === 0 && (!form.full_name || !form.email || !form.phone))
                     }>Next</Button>
                   ) : (
-                    <Button onClick={handleSubmit} disabled={loading || uploading} className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">
+                    <Button onClick={handleSubmit} disabled={loading || uploading || !idFile} className="bg-secondary hover:bg-secondary/90 text-secondary-foreground">
                       {loading || uploading ? "Submitting..." : "Submit Application"}
                     </Button>
                   )}

@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, ChevronDown, LogIn, LayoutDashboard, LogOut } from "lucide-react";
+import { Menu, X, ChevronDown, LogIn, LayoutDashboard, LogOut, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
@@ -8,6 +9,30 @@ import logo from "@/assets/logo.png";
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [insuranceOpen, setInsuranceOpen] = useState(false);
+  const [theme, setTheme] = useState<'light'|'dark'>(() => {
+    try {
+      const t = localStorage.getItem('theme');
+      return (t === 'dark' ? 'dark' : 'light');
+    } catch (e) {
+      return 'light';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [theme]);
+
+  const toggleTheme = () => setTheme((t) => t === 'dark' ? 'light' : 'dark');
   const location = useLocation();
   const { user, signOut } = useAuth();
 
@@ -52,6 +77,9 @@ const Header = () => {
               <Link to="/auth">
                 <Button variant="outline" size="sm" className="gap-1"><LogIn className="h-4 w-4" /> Login</Button>
               </Link>
+              <Button variant="ghost" size="sm" onClick={toggleTheme} className="gap-1">
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
             </>
           )}
         </nav>
@@ -90,6 +118,11 @@ const Header = () => {
               <Link to="/auth" onClick={() => setMobileOpen(false)}>
                 <Button variant="outline" className="w-full mt-2">Login</Button>
               </Link>
+              <div className="mt-3 flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => { toggleTheme(); setMobileOpen(false); }}>
+                  {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+              </div>
             </>
           )}
         </div>

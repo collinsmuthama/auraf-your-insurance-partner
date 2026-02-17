@@ -86,6 +86,37 @@ const AgentApprovalsTab = () => {
     }
   };
 
+  const createAgentAccount = async (email: string, fullName: string, appId: string) => {
+    try {
+      const { error } = await supabase.functions.invoke("create-agent", {
+        body: {
+          email,
+          fullName,
+          agentApplicationId: appId
+        }
+      });
+
+      if (error) {
+        console.error("Account creation error:", error);
+        toast({
+          title: "Warning",
+          description: "Application approved but failed to create agent account. You may need to create it manually.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("Account creation error:", err);
+      toast({
+        title: "Warning",
+        description: "Application approved but failed to create agent account. You may need to create it manually.",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   const updateStatus = async (id: string, status: string) => {
     setUpdating(true);
     const app = apps.find(a => a.id === id);
@@ -102,10 +133,25 @@ const AgentApprovalsTab = () => {
       if (error) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } else {
-        // Send email notification
-        await sendEmailNotification(app.email, app.full_name, status, rejectionMessage);
-        
-        toast({ title: "Success", description: `Application ${status}. Email notification sent to ${app.email}.` });
+        // If approved, create the agent account
+        if (status === "approved") {
+          const accountCreated = await createAgentAccount(app.email, app.full_name, id);
+          if (accountCreated) {
+            toast({ 
+              title: "Success", 
+              description: `Application approved! Agent account created and welcome email sent to ${app.email}.` 
+            });
+          } else {
+            toast({ 
+              title: "Partial Success", 
+              description: `Application marked as approved, but there was an issue creating the account.` 
+            });
+          }
+        } else {
+          // Send email notification for rejection
+          await sendEmailNotification(app.email, app.full_name, status, rejectionMessage);
+          toast({ title: "Success", description: `Application ${status}. Email notification sent to ${app.email}.` });
+        }
         setSelected(null);
         setRejectionMessage("");
         setPendingAction(null);
