@@ -105,6 +105,7 @@ serve(async (req: Request) => {
       `;
 
       try {
+        const fromAddress = Deno.env.get("EMAIL_FROM") || "info@aurafinsurance.com";
         await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
@@ -112,7 +113,7 @@ serve(async (req: Request) => {
             "Authorization": `Bearer ${resendApiKey}`,
           },
           body: JSON.stringify({
-            from: "noreply@auraf.com",
+            from: fromAddress,
             to: email,
             subject: "Your Auraf Agent Account is Ready! 🚀",
             html: emailHtml,

@@ -71,3 +71,13 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Email configuration 📧
+
+All outgoing mail is sent using the Supabase Edge Functions and the Resend API. The system will default to sending from **info@aurafinsurance.com**. If you need to override this for testing or other purposes, set an environment variable named `EMAIL_FROM`:
+
+```bash
+EMAIL_FROM="info@aurafinsurance.com"   # the default sender address
+```
+
+Make sure the domain is verified with your mail provider (Resend) and that the corresponding DNS records are in place. You should also configure `RESEND_API_KEY` as described elsewhere in the project.

@@ -36,6 +36,9 @@ serve(async (req: Request) => {
       );
     }
 
+    // Determine the sender address. Allow override via environment variable but default to official info address.
+    const fromAddress = Deno.env.get("EMAIL_FROM") || "info@aurafinsurance.com";
+
     // Send email via Resend API
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -44,7 +47,7 @@ serve(async (req: Request) => {
         "Authorization": `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: "noreply@auraf.com",
+        from: fromAddress,
         to: to,
         subject: subject,
         html: html,
