@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { partnerNames, partnerList } from "@/data/partners";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,11 +27,18 @@ interface Policy {
   description: string | null;
 }
 
+// helper exported for testing and reuse (not currently used in component)
+export function computeProviders(policies: Policy[]): string[] {
+  const policyProviders = [...new Set(policies.map(p => p.provider).filter(Boolean))] as string[];
+  return [...new Set<string>([...policyProviders, ...partnerNames])];
+}
+
 const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [allPolicies, setAllPolicies] = useState<Policy[]>([]);
+  const [dbProviders, setDbProviders] = useState<string[]>([]);
+  const [policiesForProvider, setPoliciesForProvider] = useState<Policy[]>([]);
   const { toast } = useToast();
   const [form, setForm] = useState({
     service_provider: "",
@@ -45,30 +53,53 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
     message: "",
   });
 
+  // when dialog opens, fetch unique provider names from DB
   useEffect(() => {
     if (open) {
-      supabase.from("insurance_policies").select("*").eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .then(({ data }) => setAllPolicies((data as Policy[]) ?? []));
+      supabase
+        .from("insurance_policies")
+        .select("provider", { distinct: true })
+        .eq("is_active", true)
+        .then(({ data }) => {
+          const names = (data as Array<{ provider: string | null }>).
+            map((r) => r.provider)
+            .filter(Boolean) as string[];
+          setDbProviders([...new Set(names)]);
+        });
     }
   }, [open]);
+
+  // fetch policies any time the selected provider changes
+  useEffect(() => {
+    if (open && form.service_provider) {
+      supabase
+        .from("insurance_policies")
+        .select("*")
+        .eq("is_active", true)
+        .eq("provider", form.service_provider)
+        .order("created_at", { ascending: false })
+        .then(({ data }) => setPoliciesForProvider((data as Policy[]) ?? []));
+    } else {
+      setPoliciesForProvider([]);
+    }
+  }, [form.service_provider, open]);
 
   const update = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
   // Derived data based on selections
-  const providers = [...new Set(allPolicies.map(p => p.provider).filter(Boolean))] as string[];
+  // combine providers from database with configured partner names
+  const providers = [...new Set<string>([...dbProviders, ...partnerNames])];
   
-  const insuranceTypes = [...new Set(
-    allPolicies
-      .filter(p => p.provider === form.service_provider)
-      .map(p => p.policy_type)
-  )];
+  // insurance types and policies come from the provider-specific fetch
+  const insuranceTypes = [...new Set(policiesForProvider.map((p) => p.policy_type))];
 
-  const filteredPolicies = allPolicies.filter(
-    p => p.provider === form.service_provider && p.policy_type === form.insurance_type
+  const filteredPolicies = policiesForProvider.filter(
+    (p) => p.policy_type === form.insurance_type
   );
 
-  const selectedPolicy = allPolicies.find(p => p.id === form.selected_policy_id);
+  const selectedPolicy = policiesForProvider.find(
+    (p) => p.id === form.selected_policy_id
+  );
 
   const selectPolicy = (policy: Policy) => {
     setForm(f => ({ ...f, selected_policy_id: policy.id, selected_policy_name: policy.name }));
@@ -105,7 +136,9 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
 
   const canNext = () => {
     if (step === 0) return !!form.service_provider;
-    if (step === 1) return !!form.insurance_type;
+    // allow proceeding even when no insurance types exist for the selected
+    // provider (general quote request)
+    if (step === 1) return insuranceTypes.length === 0 || !!form.insurance_type;
     if (step === 2) return true;
     if (step === 3) return form.full_name && form.email && form.phone;
     return true;
@@ -144,28 +177,40 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
               <div className="space-y-3">
                 <Label>Select an insurance provider</Label>
                 {providers.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No providers available. Please add policies first.</p>
+                  <p className="text-muted-foreground text-sm">No providers available. Please contact an administrator to configure partners or add policies.</p>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
-                    {providers.map((p) => (
-                      <Card
-                        key={p}
-                        className={`cursor-pointer transition-all ${form.service_provider === p ? "ring-2 ring-primary border-primary" : "hover:border-primary/50"}`}
-                        onClick={() => {
-                          update("service_provider", p);
-                          update("insurance_type", "");
-                          update("selected_policy_id", "");
-                          update("selected_policy_name", "");
-                        }}
-                      >
-                        <CardContent className="p-4 text-center">
-                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
-                            <span className="text-primary font-bold text-lg">{p.charAt(0)}</span>
-                          </div>
-                          <p className="font-medium text-sm">{p}</p>
-                        </CardContent>
-                      </Card>
-                    ))}
+                    {providers.map((p) => {
+                      const partner = partnerList.find((pl) => pl.name === p);
+                      const logoSrc = partner?.logo;
+                      return (
+                        <Card
+                          key={p}
+                          className={`cursor-pointer transition-all ${form.service_provider === p ? "ring-2 ring-primary border-primary" : "hover:border-primary/50"}`}
+                          onClick={() => {
+                            update("service_provider", p);
+                            update("insurance_type", "");
+                            update("selected_policy_id", "");
+                            update("selected_policy_name", "");
+                          }}
+                        >
+                          <CardContent className="p-4 text-center">
+                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
+                              {logoSrc ? (
+                                <img
+                                  src={logoSrc}
+                                  alt={p}
+                                  className="w-full h-full object-contain rounded-full"
+                                />
+                              ) : (
+                                <span className="text-primary font-bold text-lg">{p.charAt(0)}</span>
+                              )}
+                            </div>
+                            <p className="font-medium text-sm">{p}</p>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -176,7 +221,7 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
               <div className="space-y-3">
                 <Label>What type of insurance from {form.service_provider}?</Label>
                 {insuranceTypes.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No insurance types found for this provider.</p>
+                  <p className="text-muted-foreground text-sm">No insurance types found for this provider. You can continue to submit a general quote.</p>
                 ) : (
                   <div className="grid grid-cols-2 gap-3">
                     {insuranceTypes.map((t) => (
@@ -207,26 +252,39 @@ const QuoteWizard = ({ open, onOpenChange }: QuoteWizardProps) => {
                 {filteredPolicies.length === 0 ? (
                   <p className="text-muted-foreground text-sm">No specific policies found. You can proceed to get a general quote.</p>
                 ) : (
-                  <div className="space-y-3 max-h-60 overflow-y-auto">
-                    {filteredPolicies.map((p) => (
-                      <Card
-                        key={p.id}
-                        className={`cursor-pointer transition-all ${form.selected_policy_id === p.id ? "ring-2 ring-primary border-primary" : "hover:border-primary/50"}`}
-                        onClick={() => selectPolicy(p)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <span className="font-semibold text-sm">{p.name}</span>
-                              {p.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{p.description}</p>}
-                            </div>
-                            {p.premium_range && (
-                              <Badge variant="secondary" className="text-xs whitespace-nowrap">{p.premium_range}</Badge>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                  <div className="space-y-2">
+                    <select
+                      value={form.selected_policy_id}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        if (id) {
+                          const policy = policiesForProvider.find((p) => p.id === id);
+                          if (policy) selectPolicy(policy);
+                        } else {
+                          // clear selection
+                          setForm((f) => ({
+                            ...f,
+                            selected_policy_id: "",
+                            selected_policy_name: "",
+                          }));
+                        }
+                      }}
+                      className="w-full p-2 border border-border rounded"
+                    >
+                      <option value="">-- No policy / general quote --</option>
+                      {filteredPolicies.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                    {selectedPolicy && (
+                      <div className="p-2 bg-muted rounded">
+                        <p className="text-sm font-semibold">{selectedPolicy.name}</p>
+                        {selectedPolicy.description && <p className="text-xs text-muted-foreground mt-1">{selectedPolicy.description}</p>}
+                        {selectedPolicy.premium_range && (
+                          <Badge variant="secondary" className="text-xs">{selectedPolicy.premium_range}</Badge>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
